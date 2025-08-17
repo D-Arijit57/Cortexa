@@ -1,0 +1,20 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Brain Icon -->
+  <path d="M16 4C12.6863 4 10 6.68629 10 10C10 11.5 10.5 12.9 11.3 14C9.8 15.2 9 17 9 19C9 21.5 10.5 23.5 12.5 24.5C13.2 24.8 14 25 14.8 25.2C15.3 25.4 15.8 25.5 16.3 25.5C16.8 25.5 17.3 25.4 17.8 25.2C18.6 25 19.4 24.8 20.1 24.5C22.1 23.5 23.6 21.5 23.6 19C23.6 17 22.8 15.2 21.3 14C22.1 12.9 22.6 11.5 22.6 10C22.6 6.68629 19.9 4 16.6 4H16Z" fill="#8B5CF6"/>
+  
+  <!-- Brain Details -->
+  <path d="M14 12C14.6 12.8 15.3 13.3 16 13.3C16.7 13.3 17.4 12.8 18 12C18.6 12.8 19.3 13.3 20 13.3C20.7 13.3 21.4 12.8 22 12" stroke="#F59E0B" stroke-width="1.5" stroke-linecap="round"/>
+  
+  <!-- Sparkle -->
+  <path d="M24 8L25.5 9.5L27 8L25.5 6.5L24 8Z" fill="#F59E0B"/>
+  <path d="M8 8L6.5 9.5L5 8L6.5 6.5L8 8Z" fill="#F59E0B"/>
+  
+  <!-- Gradient Background -->
+  <defs>
+    <linearGradient id="brainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8B5CF6;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#3B82F6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#06B6D4;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+</svg>
