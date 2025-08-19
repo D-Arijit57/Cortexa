@@ -44,23 +44,10 @@ http.route({
 
     const eventType = evt.type;
 
+    // Don't automatically create users - let the onboarding process handle it
     if (eventType === "user.created") {
-      const { id, email_addresses, first_name, last_name, image_url } = evt.data;
-
-      const email = email_addresses[0].email_address;
-      const name = `${first_name || ""} ${last_name || ""}`.trim();
-
-      try {
-        await ctx.runMutation(api.users.syncUser, {
-          clerkId: id,
-          email,
-          name,
-          image: image_url,
-        });
-      } catch (error) {
-        console.log("Error creating user:", error);
-        return new Response("Error creating user", { status: 500 });
-      }
+      console.log("User created in Clerk, but not creating in Convex automatically");
+      // We'll let the onboarding process create the user with the correct role
     }
 
     return new Response("Webhook processed successfully", { status: 200 });

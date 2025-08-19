@@ -26,12 +26,16 @@ import { Loader2Icon, XIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { TIME_SLOTS } from "@/constants";
 import MeetingCard from "@/components/MeetingCard";
+import ActionCard from "@/components/ActionCard";
+import { QUICK_ACTIONS } from "@/constants";
 
 function InterviewScheduleUI() {
   const client = useStreamVideoClient();
   const { user } = useUser();
   const [open, setOpen] = useState(false);
+  const [joinModalOpen, setJoinModalOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [meetingId, setMeetingId] = useState("");
 
   const interviews = useQuery(api.interviews.getAllInterviews) ?? [];
   const users = useQuery(api.users.getUsers) ?? [];
@@ -48,6 +52,76 @@ function InterviewScheduleUI() {
     candidateId: "",
     interviewerIds: user?.id ? [user.id] : [],
   });
+
+  const handleJoinMeeting = () => {
+    if (!meetingId.trim()) {
+      toast.error("Please enter a meeting ID");
+      return;
+    }
+
+    // Extract meeting ID from URL if a full link was pasted
+    let extractedMeetingId = meetingId.trim();
+    
+    // If it's a full URL, extract the meeting ID from the path
+    if (meetingId.includes('/meeting/')) {
+      const urlParts = meetingId.split('/meeting/');
+      if (urlParts.length > 1) {
+        extractedMeetingId = urlParts[1].split('?')[0]; // Remove query parameters
+      }
+    }
+
+    // Validate meeting ID format (basic UUID validation)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(extractedMeetingId)) {
+      toast.error("Invalid meeting ID format");
+      return;
+    }
+
+    // Navigate to the meeting
+    window.location.href = `/meeting/${extractedMeetingId}`;
+  };
+
+  const handleQuickAction = (title: string) => {
+    switch (title) {
+      case "New Call":
+        // For instant meeting, we can create a meeting immediately
+        if (!client || !user) {
+          toast.error("Please wait for the system to load");
+          return;
+        }
+        
+        const id = crypto.randomUUID();
+        const call = client.call("default", id);
+        
+        call.getOrCreate({
+          data: {
+            custom: {
+              description: "Instant Interview",
+              additionalDetails: "Quick interview session",
+            },
+          },
+        }).then(() => {
+          // Navigate to the meeting
+          window.location.href = `/meeting/${id}`;
+        }).catch((error) => {
+          console.error(error);
+          toast.error("Failed to create instant meeting");
+        });
+        break;
+      case "Join Interview":
+        // Open modal to enter meeting ID
+        setJoinModalOpen(true);
+        break;
+      case "Schedule":
+        setOpen(true);
+        break;
+      case "Recordings":
+        window.location.href = "/recordings";
+        break;
+      default:
+        break;
+    }
+  };
 
   const scheduleMeeting = async () => {
     if (!client || !user) return;
@@ -285,24 +359,86 @@ function InterviewScheduleUI() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* JOIN MEETING MODAL */}
+        <Dialog open={joinModalOpen} onOpenChange={setJoinModalOpen}>
+          <DialogContent className="sm:max-w-[400px]">
+            <DialogHeader>
+              <DialogTitle>Join Interview</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Meeting ID or Link</label>
+                <Input
+                  placeholder="Enter meeting ID or paste meeting link"
+                  value={meetingId}
+                  onChange={(e) => setMeetingId(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleJoinMeeting();
+                    }
+                  }}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Enter the meeting ID or paste the full meeting link
+                </p>
+              </div>
+              
+              <div className="flex justify-end gap-3 pt-4">
+                <Button variant="outline" onClick={() => setJoinModalOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleJoinMeeting} disabled={!meetingId.trim()}>
+                  Join Meeting
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      {/* LOADING STATE & MEETING CARDS */}
-      {!interviews ? (
-        <div className="flex justify-center py-12">
-          <Loader2Icon className="size-8 animate-spin text-muted-foreground" />
+      {/* QUICK ACTIONS SECTION */}
+      <div className="space-y-6">
+        <h2 className="text-2xl font-semibold">Quick Actions</h2>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {QUICK_ACTIONS.map((action) => (
+            <ActionCard
+              key={action.title}
+              action={action}
+              onClick={() => handleQuickAction(action.title)}
+            />
+          ))}
         </div>
-      ) : interviews.length > 0 ? (
-        <div className="spacey-4">
+      </div>
+
+      {/* INTERVIEWS SECTION */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-semibold">Scheduled Interviews</h2>
+        </div>
+        
+        {!interviews ? (
+          <div className="flex justify-center py-12">
+            <Loader2Icon className="size-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : interviews.length > 0 ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {interviews.map((interview) => (
               <MeetingCard key={interview._id} interview={interview} />
             ))}
           </div>
-        </div>
-      ) : (
-        <div className="text-center py-12 text-muted-foreground">No interviews scheduled</div>
-      )}
+        ) : (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold mb-2">No interviews scheduled</h3>
+            <p className="text-muted-foreground">Click the "Schedule Interview" button above to create your first interview.</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

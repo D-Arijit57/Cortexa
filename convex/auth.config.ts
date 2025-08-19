@@ -1,8 +1,8 @@
 export default {
   providers: [
     {
-      // Must match your active Clerk instance domain (from the error: content-mosquito-82)
-      domain: "https://content-mosquito-82.clerk.accounts.dev/",
+      // Update this to your actual Clerk domain from your Clerk dashboard
+      domain: process.env.CLERK_JWT_ISSUER_DOMAIN || "https://your-actual-clerk-domain.clerk.accounts.dev",
       applicationID: "convex",
     },
   ],

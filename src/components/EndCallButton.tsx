@@ -41,7 +41,11 @@ function EndCallButton() {
   };
 
   return (
-    <Button variant={"destructive"} onClick={endCall}>
+    <Button 
+      variant="destructive" 
+      onClick={endCall}
+      className="btn-destructive"
+    >
       End Meeting
     </Button>
   );
