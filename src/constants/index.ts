@@ -91,10 +91,10 @@ export const CODING_QUESTIONS: CodeQuestion[] = [
 }`,
       cpp: `class Solution {
 public:
-    vector<int> twoSum(vector<int>& nums, int target) {
-        // Write your solution here
-        
-    }
+  vector<int> twoSum(vector<int>& nums, int target) {
+    // Write your solution here
+    
+  }
 };`,
     },
     constraints: [
@@ -135,10 +135,10 @@ public:
 }`,
       cpp: `class Solution {
 public:
-    void reverseString(vector<char>& s) {
-        // Write your solution here
-        
-    }
+  void reverseString(vector<char>& s) {
+    // Write your solution here
+    
+  }
 };`,
     },
   },
@@ -176,10 +176,10 @@ public:
 }`,
       cpp: `class Solution {
 public:
-    bool isPalindrome(int x) {
-        // Write your solution here
-        
-    }
+  bool isPalindrome(int x) {
+    // Write your solution here
+    
+  }
 };`,
     },
   },

@@ -15,6 +15,7 @@ function CodeEditor() {
   const [code, setCode] = useState(selectedQuestion.starterCode[language]);
   const [isRunning, setIsRunning] = useState(false);
   const [testResults, setTestResults] = useState<any[]>([]);
+  const [customTests, setCustomTests] = useState<string>("");
 
   const handleQuestionChange = (questionId: string) => {
     const question = CODING_QUESTIONS.find((q) => q.id === questionId)!;
@@ -32,9 +33,15 @@ function CodeEditor() {
     setTestResults([]);
     
     try {
-      // For now, we'll simulate running the code with test cases
-      // In a real implementation, you'd send this to a backend service
-      const results = await simulateCodeExecution(code, language, selectedQuestion);
+      // Try server run first
+      const response = await fetch("/api/code/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, language, questionId: selectedQuestion.id, customTests }),
+      });
+      if (!response.ok) throw new Error("Run request failed");
+      const data = await response.json();
+      const results = data.results ?? [];
       setTestResults(results);
       
       const passedTests = results.filter((result: any) => result.passed).length;
@@ -46,7 +53,20 @@ function CodeEditor() {
         toast.error(`${passedTests}/${totalTests} test cases passed`);
       }
     } catch (error) {
-      toast.error("Failed to run code. Please check your syntax.");
+      // Fallback to local simulation
+      try {
+        const results = await simulateCodeExecution(code, language, selectedQuestion);
+        setTestResults(results);
+        const passedTests = results.filter((result: any) => result.passed).length;
+        const totalTests = results.length;
+        if (passedTests === totalTests) {
+          toast.success(`All ${totalTests} test cases passed! 🎉`);
+        } else {
+          toast.error(`${passedTests}/${totalTests} test cases passed`);
+        }
+      } catch (e) {
+        toast.error("Failed to run code. Please check your syntax.");
+      }
     } finally {
       setIsRunning(false);
     }
@@ -57,8 +77,14 @@ function CodeEditor() {
     setTestResults([]);
     
     try {
-      // Run all test cases for submission
-      const results = await simulateCodeExecution(code, language, selectedQuestion);
+      const response = await fetch("/api/code/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, language, questionId: selectedQuestion.id, customTests }),
+      });
+      if (!response.ok) throw new Error("Submit request failed");
+      const data = await response.json();
+      const results = data.results ?? [];
       setTestResults(results);
       
       const passedTests = results.filter((result: any) => result.passed).length;
@@ -70,7 +96,20 @@ function CodeEditor() {
         toast.error(`❌ ${passedTests}/${totalTests} test cases passed. Please fix your solution.`);
       }
     } catch (error) {
-      toast.error("Failed to submit code. Please check your syntax.");
+      // Fallback to local simulation
+      try {
+        const results = await simulateCodeExecution(code, language, selectedQuestion);
+        setTestResults(results);
+        const passedTests = results.filter((result: any) => result.passed).length;
+        const totalTests = results.length;
+        if (passedTests === totalTests) {
+          toast.success(`🎉 Congratulations! All test cases passed! Your solution is correct.`);
+        } else {
+          toast.error(`❌ ${passedTests}/${totalTests} test cases passed. Please fix your solution.`);
+        }
+      } catch (e) {
+        toast.error("Failed to submit code. Please check your syntax.");
+      }
     } finally {
       setIsRunning(false);
     }
@@ -343,6 +382,40 @@ function CodeEditor() {
               </div>
             </div>
           )}
+
+          {/* CUSTOM TESTS */}
+          <div className="border-t bg-muted/30">
+            <div className="p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-medium">Custom Tests (JSON array)</h4>
+                <span className="text-xs text-muted-foreground">Format depends on problem</span>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Examples:
+                {language === "cpp" && selectedQuestion.id === "two-sum" && (
+                  <pre className="mt-1 p-2 bg-muted rounded">{`[
+  { "nums": [2,7,11,15], "target": 9, "expected": [0,1] }
+]`}</pre>
+                )}
+                {language === "cpp" && selectedQuestion.id === "reverse-string" && (
+                  <pre className="mt-1 p-2 bg-muted rounded">{`[
+  { "s": ["h","e","l","l","o"], "expected": ["o","l","l","e","h"] }
+]`}</pre>
+                )}
+                {language === "cpp" && selectedQuestion.id === "palindrome-number" && (
+                  <pre className="mt-1 p-2 bg-muted rounded">{`[
+  { "x": 121, "expected": true }
+]`}</pre>
+                )}
+              </div>
+              <textarea
+                className="w-full h-28 text-sm rounded border bg-background p-2 font-mono"
+                placeholder="[]"
+                value={customTests}
+                onChange={(e) => setCustomTests(e.target.value)}
+              />
+            </div>
+          </div>
         </div>
       </ResizablePanel>
     </ResizablePanelGroup>
