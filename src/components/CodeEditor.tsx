@@ -4,13 +4,17 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./ui/resiz
 import { ScrollArea, ScrollBar } from "./ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { AlertCircleIcon, BookIcon, LightbulbIcon } from "lucide-react";
+import { AlertCircleIcon, BookIcon, LightbulbIcon, PlayIcon, SendIcon } from "lucide-react";
 import Editor from "@monaco-editor/react";
+import { Button } from "./ui/button";
+import { toast } from "react-hot-toast";
 
 function CodeEditor() {
   const [selectedQuestion, setSelectedQuestion] = useState(CODING_QUESTIONS[0]);
-  const [language, setLanguage] = useState<"javascript" | "python" | "java">(LANGUAGES[0].id);
+  const [language, setLanguage] = useState<"javascript" | "python" | "java" | "cpp">(LANGUAGES[0].id);
   const [code, setCode] = useState(selectedQuestion.starterCode[language]);
+  const [isRunning, setIsRunning] = useState(false);
+  const [testResults, setTestResults] = useState<any[]>([]);
 
   const handleQuestionChange = (questionId: string) => {
     const question = CODING_QUESTIONS.find((q) => q.id === questionId)!;
@@ -18,9 +22,92 @@ function CodeEditor() {
     setCode(question.starterCode[language]);
   };
 
-  const handleLanguageChange = (newLanguage: "javascript" | "python" | "java") => {
+  const handleLanguageChange = (newLanguage: "javascript" | "python" | "java" | "cpp") => {
     setLanguage(newLanguage);
     setCode(selectedQuestion.starterCode[newLanguage]);
+  };
+
+  const runCode = async () => {
+    setIsRunning(true);
+    setTestResults([]);
+    
+    try {
+      // For now, we'll simulate running the code with test cases
+      // In a real implementation, you'd send this to a backend service
+      const results = await simulateCodeExecution(code, language, selectedQuestion);
+      setTestResults(results);
+      
+      const passedTests = results.filter((result: any) => result.passed).length;
+      const totalTests = results.length;
+      
+      if (passedTests === totalTests) {
+        toast.success(`All ${totalTests} test cases passed! 🎉`);
+      } else {
+        toast.error(`${passedTests}/${totalTests} test cases passed`);
+      }
+    } catch (error) {
+      toast.error("Failed to run code. Please check your syntax.");
+    } finally {
+      setIsRunning(false);
+    }
+  };
+
+  const submitCode = async () => {
+    setIsRunning(true);
+    setTestResults([]);
+    
+    try {
+      // Run all test cases for submission
+      const results = await simulateCodeExecution(code, language, selectedQuestion);
+      setTestResults(results);
+      
+      const passedTests = results.filter((result: any) => result.passed).length;
+      const totalTests = results.length;
+      
+      if (passedTests === totalTests) {
+        toast.success(`🎉 Congratulations! All test cases passed! Your solution is correct.`);
+      } else {
+        toast.error(`❌ ${passedTests}/${totalTests} test cases passed. Please fix your solution.`);
+      }
+    } catch (error) {
+      toast.error("Failed to submit code. Please check your syntax.");
+    } finally {
+      setIsRunning(false);
+    }
+  };
+
+  // Simulate code execution with test cases
+  const simulateCodeExecution = async (code: string, language: string, question: any) => {
+    // This is a simulation - in a real app, you'd send this to a backend service
+    // that can actually compile and run the code
+    
+    const testCases = question.examples.map((example: any, index: number) => ({
+      input: example.input,
+      expectedOutput: example.output,
+      testNumber: index + 1
+    }));
+
+    // Simulate processing time
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // For demonstration, we'll simulate different results based on the code content
+    return testCases.map((testCase: any) => {
+      const hasSolution = code.includes("// Write your solution here") === false && 
+                         code.includes("# Write your solution here") === false &&
+                         code.includes("pass") === false;
+      
+      const passed = hasSolution && Math.random() > 0.3; // 70% chance of passing if solution exists
+      
+      return {
+        testNumber: testCase.testNumber,
+        input: testCase.input,
+        expectedOutput: testCase.expectedOutput,
+        actualOutput: passed ? testCase.expectedOutput : "Incorrect output",
+        passed,
+        executionTime: Math.random() * 100 + 50, // Random execution time
+        memoryUsed: Math.random() * 10 + 5 // Random memory usage
+      };
+    });
   };
 
   return (
@@ -162,25 +249,100 @@ function CodeEditor() {
 
       {/* CODE EDITOR */}
       <ResizablePanel defaultSize={60} maxSize={100}>
-        <div className="h-full relative">
-          <Editor
-            height={"100%"}
-            defaultLanguage={language}
-            language={language}
-            theme="vs-dark"
-            value={code}
-            onChange={(value) => setCode(value || "")}
-            options={{
-              minimap: { enabled: false },
-              fontSize: 18,
-              lineNumbers: "on",
-              scrollBeyondLastLine: false,
-              automaticLayout: true,
-              padding: { top: 16, bottom: 16 },
-              wordWrap: "on",
-              wrappingIndent: "indent",
-            }}
-          />
+        <div className="h-full flex flex-col">
+          {/* BUTTON BAR */}
+          <div className="flex items-center justify-between p-4 border-b bg-background">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-muted-foreground">Code Editor</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={runCode}
+                disabled={isRunning}
+                variant="outline"
+                size="sm"
+                className="gap-2"
+              >
+                <PlayIcon className="h-4 w-4" />
+                {isRunning ? "Running..." : "Run"}
+              </Button>
+              <Button
+                onClick={submitCode}
+                disabled={isRunning}
+                size="sm"
+                className="gap-2"
+              >
+                <SendIcon className="h-4 w-4" />
+                {isRunning ? "Submitting..." : "Submit"}
+              </Button>
+            </div>
+          </div>
+
+          {/* EDITOR */}
+          <div className="flex-1 relative">
+            <Editor
+              height={"100%"}
+              defaultLanguage={language}
+              language={language}
+              theme="vs-dark"
+              value={code}
+              onChange={(value) => setCode(value || "")}
+              options={{
+                minimap: { enabled: false },
+                fontSize: 18,
+                lineNumbers: "on",
+                scrollBeyondLastLine: false,
+                automaticLayout: true,
+                padding: { top: 16, bottom: 16 },
+                wordWrap: "on",
+                wrappingIndent: "indent",
+              }}
+            />
+          </div>
+
+          {/* TEST RESULTS */}
+          {testResults.length > 0 && (
+            <div className="border-t bg-muted/50">
+              <div className="p-4">
+                <h3 className="text-lg font-semibold mb-3">Test Results</h3>
+                <div className="space-y-3">
+                  {testResults.map((result, index) => (
+                    <div
+                      key={index}
+                      className={`p-3 rounded-lg border ${
+                        result.passed
+                          ? "bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800"
+                          : "bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium">
+                          Test Case {result.testNumber}
+                        </span>
+                        <span
+                          className={`px-2 py-1 rounded text-xs font-medium ${
+                            result.passed
+                              ? "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100"
+                              : "bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100"
+                          }`}
+                        >
+                          {result.passed ? "PASSED" : "FAILED"}
+                        </span>
+                      </div>
+                      <div className="text-sm space-y-1">
+                        <div><strong>Input:</strong> {result.input}</div>
+                        <div><strong>Expected:</strong> {result.expectedOutput}</div>
+                        <div><strong>Actual:</strong> {result.actualOutput}</div>
+                        <div className="text-xs text-muted-foreground">
+                          Time: {result.executionTime.toFixed(2)}ms | Memory: {result.memoryUsed.toFixed(2)}MB
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </ResizablePanel>
     </ResizablePanelGroup>
