@@ -1,5 +1,8 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { requireInterviewPanelist, requireRole } from "./lib/auth";
+
+const INTERVIEW_STATUSES = ["upcoming", "completed", "succeeded", "failed"] as const;
 
 export const getAllInterviews = query({
   handler: async (ctx) => {
@@ -48,8 +51,8 @@ export const createInterview = mutation({
     interviewerIds: v.array(v.string()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthorized");
+    // Only interviewers schedule interviews.
+    await requireRole(ctx, "interviewer");
 
     return await ctx.db.insert("interviews", {
       ...args,
@@ -63,6 +66,13 @@ export const updateInterviewStatus = mutation({
     status: v.string(),
   },
   handler: async (ctx, args) => {
+    // Only an interviewer on this interview's panel can move its status.
+    await requireInterviewPanelist(ctx, args.id);
+
+    if (!INTERVIEW_STATUSES.includes(args.status as (typeof INTERVIEW_STATUSES)[number])) {
+      throw new Error(`Invalid status: "${args.status}"`);
+    }
+
     return await ctx.db.patch(args.id, {
       status: args.status,
       ...(args.status === "completed" ? { endTime: Date.now() } : {}),

@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { requireInterviewPanelist, requireRole } from "./lib/auth";
 
 // add a new comment
 export const addComment = mutation({
@@ -9,14 +10,14 @@ export const addComment = mutation({
     rating: v.number(),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthorized");
+    // Only an interviewer on this interview's panel can leave feedback on it.
+    const { user } = await requireInterviewPanelist(ctx, args.interviewId);
 
     return await ctx.db.insert("comments", {
       interviewId: args.interviewId,
       content: args.content,
       rating: args.rating,
-      interviewerId: identity.subject,
+      interviewerId: user.clerkId,
     });
   },
 });
@@ -25,6 +26,9 @@ export const addComment = mutation({
 export const getComments = query({
   args: { interviewId: v.id("interviews") },
   handler: async (ctx, args) => {
+    // Feedback is interviewer-only.
+    await requireRole(ctx, "interviewer");
+
     const comments = await ctx.db
       .query("comments")
       .withIndex("by_interview_id", (q) => q.eq("interviewId", args.interviewId))

@@ -46,7 +46,6 @@ export default function OnboardingPage() {
       
       // Use the simplified mutation
       const result = await createUserWithRoleMutation({
-        clerkId: user.id,
         email: user.emailAddresses[0]?.emailAddress || "",
         fullName: user.fullName || "",
         image: user.imageUrl,
