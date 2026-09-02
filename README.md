@@ -212,7 +212,3 @@ If you have any questions or need help, please:
 
 ---
 
-**Built with ❤️ by [D-Arijit57](https://github.com/D-Arijit57)**
-
-*Transform your remote interviews with Cortexa - Where technology meets human connection.*
-
