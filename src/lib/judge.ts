@@ -93,7 +93,7 @@ function escapeStringForCppJson(s: string): string {
   return s.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
-function buildCppHarness(questionId: string, userCode: string, tests: JudgeTestCase[]): { mainFileName: string; files: Array<{ name: string; content: string }> } {
+export function buildCppHarness(questionId: string, userCode: string, tests: JudgeTestCase[]): { mainFileName: string; files: Array<{ name: string; content: string }> } {
   const includes = [
     "#include <bits/stdc++.h>",
   ].join("\n");
